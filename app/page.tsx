@@ -1,69 +1,104 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { Info } from 'lucide-react';
+import Sidebar, { NavPage } from '@/components/layout/Sidebar';
+import PortfolioSummaryBand from '@/components/dashboard/PortfolioSummaryBand';
+import PortfoliosTab from '@/components/portfolios/PortfoliosTab';
+import PortfolioDetail from '@/components/portfolios/PortfolioDetail';
+import PlaceholderTab from '@/components/tabs/PlaceholderTab';
+import CommandPalette from '@/components/search/CommandPalette';
+import { portfolios } from '@/lib/data';
+
+export default function DashboardPage() {
+  const [activePage, setActivePage]                = useState<NavPage>('home');
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
+  const [commandPaletteOpen, setCommandPaletteOpen]   = useState(false);
+
+  const selectedPortfolio = selectedPortfolioId
+    ? portfolios.find(p => p.id === selectedPortfolioId) ?? null
+    : null;
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(v => !v);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  function handlePageChange(page: NavPage) {
+    setActivePage(page);
+    setSelectedPortfolioId(null);
+  }
+
+  function handleSelectPortfolio(id: string) {
+    setSelectedPortfolioId(id);
+    setActivePage('home');
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen bg-[#f9fbfd] overflow-hidden">
+      <Sidebar
+        activePage={activePage}
+        onPageChange={handlePageChange}
+        onOpenSearch={() => setCommandPaletteOpen(true)}
+      />
+
+      {/* Main area */}
+      <div className="flex-1 p-[10px] pl-0 min-w-0">
+        <div className="bg-white border border-[#dfe3e9] rounded-[10px] h-full overflow-hidden flex flex-col relative">
+
+          {activePage === 'home' ? (
+            selectedPortfolio ? (
+              <PortfolioDetail
+                portfolio={selectedPortfolio}
+                onBack={() => setSelectedPortfolioId(null)}
+                onSwitch={setSelectedPortfolioId}
+              />
+            ) : (
+              <>
+                {/* Greeting + currency notice */}
+                <div className="flex items-center justify-between px-[24px] pt-[18px] pb-[14px] shrink-0">
+                  <p className="text-[16px] text-[#07132a] leading-none" style={{ fontFamily: 'DeutscheBankDisplay, serif' }}>
+                    Good morning Nick, here is your consolidated view across {portfolios.length} portfolios.
+                  </p>
+                  <div className="flex items-center gap-[5px] shrink-0 ml-[16px]">
+                    <Info size={12} className="text-[#b0b7c3]" strokeWidth={1.75} />
+                    <p className="text-[11px] text-[#9ca3af] leading-none whitespace-nowrap">All values in USD</p>
+                  </div>
+                </div>
+                <div className="h-px bg-[#dfe3e9] shrink-0" />
+                <PortfolioSummaryBand />
+                <div className="flex-1 min-h-0 flex flex-col">
+                  <PortfoliosTab onSelectPortfolio={setSelectedPortfolioId} />
+                </div>
+              </>
+            )
+          ) : activePage === 'markets' ? (
+            <PlaceholderTab label="Markets" subtitle="Watchlist lives here" />
+          ) : activePage === 'news-insights' ? (
+            <PlaceholderTab label="News & Insights" />
+          ) : activePage === 'holdings' ? (
+            <PlaceholderTab label="Holdings" subtitle="Liabilities lives here" />
+          ) : activePage === 'reports' ? (
+            <PlaceholderTab label="Reports" />
+          ) : activePage === 'transactions' ? (
+            <PlaceholderTab label="Transactions" />
+          ) : null}
+
+        </div>
+      </div>
+
+      {commandPaletteOpen && (
+        <CommandPalette
+          onClose={() => setCommandPaletteOpen(false)}
+          onSelectPortfolio={handleSelectPortfolio}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
